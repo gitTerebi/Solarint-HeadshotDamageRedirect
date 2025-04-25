@@ -100,7 +100,7 @@ namespace SolarintHeadshotDamageRedirect
                 partsList = partsList + part.ToString() + " ";
             }
 
-            stringBuilder.AppendLine($"Redirected damage ({perPart}) to [ {partsList}]");
+            stringBuilder.AppendLine($"Headshot damage redirected to [ {partsList}]");
         }
 
         private static void getPartsToRedirect(List<EBodyPart> parts)
@@ -134,9 +134,9 @@ namespace SolarintHeadshotDamageRedirect
 
         private static void LogMessage(float originalDamageTohead, float newDamageToHead, float damageToRedirect, StringBuilder stringBuilder)
         {
-            string message = $"Headshot damage redirected! Head ({newDamageToHead}) + " +
-                $" Redirected ({damageToRedirect}) " +
-                $"= Total ({originalDamageTohead})";
+            string message = $"Head ({newDamageToHead.ToString("0.#")}) + " +
+                $" Other ({damageToRedirect.ToString("0.#")}) " +
+                $"= Total ({originalDamageTohead.ToString("0.#")})";
 
             stringBuilder.AppendLine(message);
 
