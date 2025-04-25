@@ -33,8 +33,21 @@ namespace SolarintHeadshotDamageRedirect
                 return;
             }
 
+            // Target is not our player - don't do anything
+            if (__instance == null || !__instance.IsYourPlayer)
+            {
+                return;
+            }
+
+            // Scale damage based on our set damage %
+            if (Settings.GlobalDamageReductionPercentage.Value != 100)
+            {
+                damageInfo.Damage = damageInfo.Damage * Settings.GlobalDamageReductionPercentage.Value / 100;
+            }
+            
+
             // Is the incoming damage coming to the head, and is the current player instance the main player?
-            if (bodyPartType == EBodyPart.Head && __instance.IsYourPlayer) {
+            if (bodyPartType == EBodyPart.Head) {
                 float chance = Settings.ChanceToRedirect.Value;
                 if (chance < 100 && !RandomBool(chance)) {
                     return;
@@ -304,6 +317,7 @@ namespace SolarintHeadshotDamageRedirect
         public static ConfigEntry<float> MaxHeadDamageNumber;
         public static ConfigEntry<float> MinHeadDamageToRedirect;
         public static ConfigEntry<float> ChanceToRedirect;
+        public static ConfigEntry<float> GlobalDamageReductionPercentage;
         public static ConfigEntry<float> HeadshotMultiplier;
         public static ConfigEntry<int> BodyPartsCountToRedirectTo;
 
@@ -448,6 +462,18 @@ namespace SolarintHeadshotDamageRedirect
 
                 RedirectParts.Add(part, config);
             }
+
+            name = "% All Damage Received";
+            description = "Scale all incoming damage.";
+            defaultFloat = 100f;
+
+            GlobalDamageReductionPercentage = Config.Bind(
+                "Dad Gamer!", name, defaultFloat,
+                new ConfigDescription(description,
+                new AcceptableValueRange<float>(0f, 100f),
+                new ConfigurationManagerAttributes { Order = optionCount-- }
+                ));
+
         }
 
         public static int CheckPartsEnabledCount()
