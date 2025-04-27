@@ -80,5 +80,6 @@
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="xcopy /y /f &quot;$(TargetPath)&quot; &quot;$(ProjectDir)\Build\BepInEx\plugins\&quot;" />
+    <Exec Command="(powershell Compress-Archive -Path '$(ProjectDir)\Build\BepInEx' -DestinationPath '$(ProjectDir)\Build\Solarint-HeadshotDamageRedirect.zip' -Force)"/>
   </Target>
 </Project>
