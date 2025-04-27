@@ -12,7 +12,7 @@ using static VersionChecker.TarkovVersion;
 
 namespace SolarintHeadshotDamageRedirect
 {
-    [BepInPlugin("solarint.dmgRedirect", "Headshot Damage Redirection", "1.3.2")]
+    [BepInPlugin("solarint.dmgRedirect", "Headshot Damage Redirection", "1.4.0")]
     public class Plugin : BaseUnityPlugin
     {
         private void Awake()
