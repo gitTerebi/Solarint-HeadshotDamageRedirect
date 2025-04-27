@@ -79,6 +79,6 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="xcopy /y /f &quot;$(TargetPath)&quot; &quot;$(ProjectDir)\Build\&quot;" />
+    <Exec Command="xcopy /y /f &quot;$(TargetPath)&quot; &quot;$(ProjectDir)\Build\BepInEx\plugins\&quot;" />
   </Target>
 </Project>
