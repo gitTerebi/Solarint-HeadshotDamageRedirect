@@ -45,7 +45,6 @@ namespace SolarintHeadshotDamageRedirect
                 damageInfo.Damage = damageInfo.Damage * Settings.GlobalDamageReductionPercentage.Value / 100;
             }
             
-
             // Is the incoming damage coming to the head, and is the current player instance the main player?
             if (bodyPartType == EBodyPart.Head) {
                 float chance = Settings.ChanceToRedirect.Value;
@@ -154,7 +153,9 @@ namespace SolarintHeadshotDamageRedirect
             stringBuilder.AppendLine(message);
 
             if (Settings.DisplayMessage.Value || Settings.DebugEnabled.Value) {
-                NotificationManagerClass.DisplayMessageNotification(stringBuilder.ToString(), ENotificationDurationType.Default, ENotificationIconType.Alert);
+                NotificationManagerClass.DisplayMessageNotification(stringBuilder.ToString(), 
+                ENotificationDurationType.Long, 
+                ENotificationIconType.Alert);
             }
             Logger.LogInfo(stringBuilder.ToString());
         }
@@ -313,7 +314,6 @@ namespace SolarintHeadshotDamageRedirect
 
         // public static ConfigEntry<bool> OneHitKillProtection;
         public static ConfigEntry<float> RedirectPercentage;
-
         public static ConfigEntry<float> MaxHeadDamageNumber;
         public static ConfigEntry<float> MinHeadDamageToRedirect;
         public static ConfigEntry<float> ChanceToRedirect;
