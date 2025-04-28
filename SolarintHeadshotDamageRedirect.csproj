@@ -17,7 +17,6 @@
     <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
     <PackageReference Include="BepInEx.Core" Version="5.*" />
     <PackageReference Include="BepInEx.PluginInfoProps" Version="1.*" />
-    <PackageReference Include="UnityEngine.Modules" Version="5.6.0" IncludeAssets="compile" />
   </ItemGroup>
   
   <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
@@ -67,19 +66,15 @@
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>references\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>references\UnityEngine.IMGUIModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.TextRenderingModule">
-      <HintPath>references\UnityEngine.TextRenderingModule.dll</HintPath>
-    </Reference>
-        <Reference Include="UnityEngine.PhysicsModule">
+    <Reference Include="UnityEngine.PhysicsModule">
       <HintPath>references\UnityEngine.PhysicsModule.dll</HintPath>
     </Reference>
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="xcopy /y /f &quot;$(TargetPath)&quot; &quot;$(ProjectDir)\Build\BepInEx\plugins\&quot;" />
+    <Exec Command="xcopy /y /f &quot;$(TargetPath)&quot; &quot;G:\games\spt 3.11\BepInEx\plugins\&quot;" />
+    <Exec Command="xcopy /y /f &quot;$(TargetPath)&quot; &quot;G:\games\~spt 3.10\BepInEx\plugins\&quot;" />
     <Exec Command="(powershell Compress-Archive -Path '$(ProjectDir)\Build\BepInEx' -DestinationPath '$(ProjectDir)\Build\Solarint-HeadshotDamageRedirect.zip' -Force)"/>
   </Target>
 </Project>

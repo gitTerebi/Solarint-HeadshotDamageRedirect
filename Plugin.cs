@@ -12,7 +12,7 @@ using static VersionChecker.TarkovVersion;
 
 namespace SolarintHeadshotDamageRedirect
 {
-    [BepInPlugin("solarint.dmgRedirect", "Headshot Damage Redirection", "1.4.0")]
+    [BepInPlugin("solarint.dmgRedirect", "Headshot Damage Redirection", "1.5.0")]
     public class Plugin : BaseUnityPlugin
     {
         private void Awake()
@@ -108,7 +108,8 @@ namespace SolarintHeadshotDamageRedirect
                 ShotIdStruct newShotID = new ShotIdStruct(redirectedDamageInfo.SourceId, 0);
 
                 // Apply the redirected damage to the selected part
-                player.ApplyShot(redirectedDamageInfo, part, newColliderType, 0, newShotID);
+                // player.ApplyShot(redirectedDamageInfo, part, newColliderType, 0, newShotID);
+                player.ApplyDamageInfo(redirectedDamageInfo, part, newColliderType, 0);
                 partsList = partsList + part.ToString() + " ";
             }
 
