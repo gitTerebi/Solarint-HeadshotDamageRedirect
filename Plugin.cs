@@ -46,6 +46,7 @@ namespace SolarintHeadshotDamageRedirect
                 return;
             }
 
+
             // Scale damage based on our set damage %
             if (Settings.GlobalDamageReductionPercentage.Value != 100)
             {
