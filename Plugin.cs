@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using System.Threading;
-using static VersionChecker.TarkovVersion;
 
 namespace SolarintHeadshotDamageRedirect
 {
@@ -35,28 +34,20 @@ namespace SolarintHeadshotDamageRedirect
         [PatchPrefix]
         public static void PatchPrefix(ref EBodyPart bodyPartType, ref DamageInfoStruct damageInfo, ref Player __instance)
         {
-            if (Settings.ModEnabled.Value == false)
-            {
-                return;
-            }
+            if (Settings.ModEnabled.Value == false) return;
 
             // Target is not our player - don't do anything
-            if (__instance == null || !__instance.IsYourPlayer)
-            {
-                return;
-            }
-
+            if (__instance == null || !__instance.IsYourPlayer || __instance.IsAI) return;
 
             // Scale damage based on our set damage %
             if (Settings.GlobalDamageReductionPercentage.Value != 100)
-            {
                 damageInfo.Damage = damageInfo.Damage * Settings.GlobalDamageReductionPercentage.Value / 100;
-            }
 
             // Is the incoming damage coming to the head, and is the current player instance the main player?
             if (bodyPartType == EBodyPart.Head)
             {
-                Plugin.LogSource.LogInfo("Redirecting head damage...");
+                if (Settings.DisplayMessage.Value || Settings.DebugEnabled.Value)
+                    Plugin.LogSource.LogInfo("Redirecting head damage...");
 
                 float chance = Settings.ChanceToRedirect.Value;
                 if (chance < 100 && !RandomBool(chance))
@@ -92,19 +83,12 @@ namespace SolarintHeadshotDamageRedirect
                     newDamageToHead = UnityEngine.Mathf.Clamp(newDamageToHead, 0, maxDmg);
                 }
 
-                // Log what happened
-                LogDamageSource(ref damageInfo);
                 LogMessage(originalDamageTohead, newDamageToHead, damageToRedirect, _sb);
 
                 // Update the damage to our reduced number.
                 damageInfo.Damage = newDamageToHead;
 
                 // All Done!
-            }
-
-            if (Settings.DebugEnabled.Value && __instance.IsYourPlayer)
-            {
-                damageInfo.Damage = 1f;
             }
         }
 
@@ -170,26 +154,27 @@ namespace SolarintHeadshotDamageRedirect
         }
 
         private static readonly List<EBodyPart> _partsToRedirect = new List<EBodyPart>();
-        private static void LogDamageSource(ref DamageInfoStruct damageInfo)
-        {
-            try
-            {
-                string message = $"Received damage from ({damageInfo.ToString()})";
 
-                if (Settings.DisplayMessage.Value || Settings.DebugEnabled.Value)
-                {
-                    NotificationManagerClass.DisplayMessageNotification(message,
-                    ENotificationDurationType.Long,
-                    ENotificationIconType.Alert);
+        // private static void LogDamageSource(ref DamageInfoStruct damageInfo)
+        // {
+        //     try
+        //     {
+        //         string message = $"Received damage from ({damageInfo.ToString()})";
 
-                    Plugin.LogSource.LogInfo(message);
-                }
-            }
-            catch (Exception ex)
-            {
-                Plugin.LogSource.LogError("LogDamageSource " + ex.ToString());
-            }
-        }
+        //         if (Settings.DisplayMessage.Value || Settings.DebugEnabled.Value)
+        //         {
+        //             NotificationManagerClass.DisplayMessageNotification(message,
+        //             ENotificationDurationType.Long,
+        //             ENotificationIconType.Alert);
+
+        //             Plugin.LogSource.LogInfo(message);
+        //         }
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Plugin.LogSource.LogError("LogDamageSource " + ex.ToString());
+        //     }
+        // }
 
         private static void LogMessage(float originalDamageTohead, float newDamageToHead, float damageToRedirect, StringBuilder stringBuilder)
         {
