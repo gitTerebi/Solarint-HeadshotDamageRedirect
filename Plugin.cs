@@ -47,8 +47,8 @@ namespace SolarintHeadshotDamageRedirect
             // Is the incoming damage coming to the head, and is the current player instance the main player?
             if (bodyPartType == EBodyPart.Head)
             {
-                if (Settings.DisplayMessage.Value || Settings.DebugEnabled.Value)
-                    Plugin.LogSource.LogInfo("Redirecting head damage...");
+
+                if (Settings.DebugEnabled.Value) Plugin.LogSource.LogInfo("Redirecting head damage...");
 
                 float chance = Settings.ChanceToRedirect.Value;
                 if (chance < 100 && !RandomBool(chance))
@@ -73,7 +73,7 @@ namespace SolarintHeadshotDamageRedirect
                 float newDamageToHead = CalcDamageToHead(originalDamageTohead, out float damageToRedirect);
 
                 // Log health of each part 
-                if (Settings.DisplayMessage.Value || Settings.DebugEnabled.Value)
+                if (Settings.DebugEnabled.Value)
                     foreach (EBodyPart bodyPart in Enum.GetValues(typeof(EBodyPart)))
                     {
                         Plugin.LogSource.LogInfo($"Before {bodyPart}  = {__instance.ActiveHealthController.GetBodyPartHealth(bodyPart).Current} hp");
@@ -97,7 +97,7 @@ namespace SolarintHeadshotDamageRedirect
                 damageInfo.Damage = newDamageToHead;
 
                 // Log health of each part 
-                if (Settings.DisplayMessage.Value || Settings.DebugEnabled.Value)
+                if (Settings.DebugEnabled.Value)
                     foreach (EBodyPart bodyPart in Enum.GetValues(typeof(EBodyPart)))
                     {
                         Plugin.LogSource.LogInfo($"After {bodyPart}  = {__instance.ActiveHealthController.GetBodyPartHealth(bodyPart).Current} hp");
