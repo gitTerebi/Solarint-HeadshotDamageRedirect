@@ -9,10 +9,11 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using UnityEngine;
 
 namespace SolarintHeadshotDamageRedirect
 {
-    [BepInPlugin("solarint.dmgRedirect", "Headshot Damage Redirection", "1.5.0")]
+    [BepInPlugin("solarint.dmgRedirect", "Headshot Damage Redirection", "1.5.1")]
     public class Plugin : BaseUnityPlugin
     {
         public static ManualLogSource LogSource;
@@ -69,7 +70,14 @@ namespace SolarintHeadshotDamageRedirect
                 }
 
                 // Reduce the incoming head damage by a ratio the user has set
-                float newDamageToHead = ReduceDamage(originalDamageTohead, out float damageToRedirect);
+                float newDamageToHead = CalcDamageToHead(originalDamageTohead, out float damageToRedirect);
+
+                // Log health of each part 
+                if (Settings.DisplayMessage.Value || Settings.DebugEnabled.Value)
+                    foreach (EBodyPart bodyPart in Enum.GetValues(typeof(EBodyPart)))
+                    {
+                        Plugin.LogSource.LogInfo($"Before {bodyPart}  = {__instance.ActiveHealthController.GetBodyPartHealth(bodyPart).Current} hp");
+                    }
 
                 _sb.Clear();
                 var parts = _partsToRedirect;
@@ -80,13 +88,20 @@ namespace SolarintHeadshotDamageRedirect
                 float maxDmg = Settings.MaxHeadDamageNumber.Value;
                 if (maxDmg > 0)
                 {
-                    newDamageToHead = UnityEngine.Mathf.Clamp(newDamageToHead, 0, maxDmg);
+                    newDamageToHead = Mathf.Clamp(newDamageToHead, 0, maxDmg);
                 }
 
                 LogMessage(originalDamageTohead, newDamageToHead, damageToRedirect, _sb);
 
                 // Update the damage to our reduced number.
                 damageInfo.Damage = newDamageToHead;
+
+                // Log health of each part 
+                if (Settings.DisplayMessage.Value || Settings.DebugEnabled.Value)
+                    foreach (EBodyPart bodyPart in Enum.GetValues(typeof(EBodyPart)))
+                    {
+                        Plugin.LogSource.LogInfo($"After {bodyPart}  = {__instance.ActiveHealthController.GetBodyPartHealth(bodyPart).Current} hp");
+                    }
 
                 // All Done!
             }
@@ -96,25 +111,14 @@ namespace SolarintHeadshotDamageRedirect
 
         private static void createDamageToEachPart(List<EBodyPart> parts, float totalDamage, DamageInfoStruct damageInfo, Player player, StringBuilder stringBuilder)
         {
+            var healthController = player.ActiveHealthController;
+
             float perPart = totalDamage / parts.Count;
             string partsList = "";
             foreach (var part in parts)
             {
-                // Create a new instance of DamageInfo with all the same info as the original
-                DamageInfoStruct redirectedDamageInfo = CloneDamageInfo(damageInfo);
-
-                // Update the info in the new damageinfo to label it correctly and apply the redirected damage
-                UpdateNewDamageInfo(redirectedDamageInfo, damageInfo, perPart);
-
-                // Match the body part collider to the randomly selected body part
-                EBodyPartColliderType newColliderType = GetNewColliderType(part);
-
-                // Create a new shotID
-                ShotIdStruct newShotID = new ShotIdStruct(redirectedDamageInfo.SourceId, 0);
-
-                // Apply the redirected damage to the selected part
-                // player.ApplyShot(redirectedDamageInfo, part, newColliderType, 0, newShotID);
-                player.ApplyDamageInfo(redirectedDamageInfo, part, newColliderType, 0);
+                DamageInfoStruct redirectedDamageInfo = CloneDamageInfo(damageInfo, perPart);
+                healthController.ApplyDamage(part, perPart, redirectedDamageInfo);
                 partsList = partsList + part.ToString() + " ";
             }
 
@@ -155,27 +159,6 @@ namespace SolarintHeadshotDamageRedirect
 
         private static readonly List<EBodyPart> _partsToRedirect = new List<EBodyPart>();
 
-        // private static void LogDamageSource(ref DamageInfoStruct damageInfo)
-        // {
-        //     try
-        //     {
-        //         string message = $"Received damage from ({damageInfo.ToString()})";
-
-        //         if (Settings.DisplayMessage.Value || Settings.DebugEnabled.Value)
-        //         {
-        //             NotificationManagerClass.DisplayMessageNotification(message,
-        //             ENotificationDurationType.Long,
-        //             ENotificationIconType.Alert);
-
-        //             Plugin.LogSource.LogInfo(message);
-        //         }
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         Plugin.LogSource.LogError("LogDamageSource " + ex.ToString());
-        //     }
-        // }
-
         private static void LogMessage(float originalDamageTohead, float newDamageToHead, float damageToRedirect, StringBuilder stringBuilder)
         {
             string message = $"Redirected head damage ({originalDamageTohead.ToString("0.#")}) = " +
@@ -197,59 +180,11 @@ namespace SolarintHeadshotDamageRedirect
             return UnityEngine.Random.Range(0f, 100f) < v;
         }
 
-        private static void UpdateNewDamageInfo(DamageInfoStruct redirectedDamageInfo, DamageInfoStruct originalDamageInfo, float damageToRedirect)
-        {
-            redirectedDamageInfo.Damage = damageToRedirect;
-            redirectedDamageInfo.ArmorDamage = 0f;
-            redirectedDamageInfo.BlockedBy = null;
-            redirectedDamageInfo.DeflectedBy = null;
-            redirectedDamageInfo.DidArmorDamage = 0f;
-            //redirectedDamageInfo.OverDamageFrom = EBodyPart.Head;
-            redirectedDamageInfo.FireIndex = 0;
-            //redirectedDamageInfo.GetOverDamage(EBodyPart.Head);
-        }
-
-        private static EBodyPartColliderType GetNewColliderType(EBodyPart newPart)
-        {
-            EBodyPartColliderType newColliderType;
-            switch (newPart)
-            {
-                case EBodyPart.Chest:
-                    newColliderType = EBodyPartColliderType.RibcageUp;
-                    break;
-
-                case EBodyPart.Stomach:
-                    newColliderType = EBodyPartColliderType.RibcageLow;
-                    break;
-
-                case EBodyPart.LeftArm:
-                    newColliderType = EBodyPartColliderType.LeftUpperArm;
-                    break;
-
-                case EBodyPart.RightArm:
-                    newColliderType = EBodyPartColliderType.RightUpperArm;
-                    break;
-
-                case EBodyPart.LeftLeg:
-                    newColliderType = EBodyPartColliderType.LeftThigh;
-                    break;
-
-                case EBodyPart.RightLeg:
-                    newColliderType = EBodyPartColliderType.RightThigh;
-                    break;
-
-                default:
-                    newColliderType = EBodyPartColliderType.RibcageUp;
-                    break;
-            }
-            return newColliderType;
-        }
-
-        private static DamageInfoStruct CloneDamageInfo(DamageInfoStruct oldDamageInfo)
+        private static DamageInfoStruct CloneDamageInfo(DamageInfoStruct oldDamageInfo, float newDamage)
         {
             return new DamageInfoStruct
             {
-                Damage = oldDamageInfo.Damage,
+                Damage = newDamage,
                 DamageType = oldDamageInfo.DamageType,
                 PenetrationPower = oldDamageInfo.PenetrationPower,
                 HitCollider = oldDamageInfo.HitCollider,
@@ -277,16 +212,16 @@ namespace SolarintHeadshotDamageRedirect
             };
         }
 
-        private static float ReduceDamage(float damageToHead, out float damageToRedirect)
+        private static float CalcDamageToHead(float damageToHead, out float damageToRedirect)
         {
-            float originalDamageToHead = damageToHead;
 
-            float ratio = 1f - Settings.RedirectPercentage.Value / 100f;
-            float newDamageToHead = originalDamageToHead * ratio;
+            // calc amount to redirect
+            float ratio = Settings.RedirectPercentage.Value / 100f;
+            damageToRedirect = damageToHead * ratio;
 
-            damageToRedirect = originalDamageToHead - newDamageToHead;
-            damageToRedirect *= Settings.HeadshotMultiplier.Value;
-            return newDamageToHead;
+            float remainingDamage = damageToHead - damageToRedirect;
+            remainingDamage *= Settings.HeadshotMultiplier.Value;
+            return remainingDamage;
         }
 
         private static EBodyPart SelectRandomBodyPart()
@@ -319,11 +254,11 @@ namespace SolarintHeadshotDamageRedirect
     // Code used from https://stackoverflow.com/questions/273313/randomize-a-listt
     public static class ThreadSafeRandom
     {
-        [ThreadStatic] private static Random Local;
+        [ThreadStatic] private static System.Random Local;
 
-        public static Random ThisThreadsRandom
+        public static System.Random ThisThreadsRandom
         {
-            get { return Local ?? (Local = new Random(unchecked(Environment.TickCount * 31 + Thread.CurrentThread.ManagedThreadId))); }
+            get { return Local ?? (Local = new System.Random(unchecked(Environment.TickCount * 31 + Thread.CurrentThread.ManagedThreadId))); }
         }
     }
 
@@ -473,7 +408,7 @@ namespace SolarintHeadshotDamageRedirect
             // Body Part Selection
             List<EBodyPart> baseParts = ApplyDamageInfoPatch.BaseBodyParts;
 
-            name = "Parts to Redirect To.";
+            name = "Parts to Redirect To";
             description =
                 "How many parts to spread the damage received to.";
 
