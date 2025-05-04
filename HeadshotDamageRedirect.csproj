@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
-    <AssemblyName>Solarint-HeadShotRedirect</AssemblyName>
+    <AssemblyName>somtam.HeadShotRedirect</AssemblyName>
     <Description>HeadShotRedirect</Description>
     <Version>1.0.1</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -75,6 +75,6 @@
     <Exec Command="xcopy /y /f &quot;$(TargetPath)&quot; &quot;$(ProjectDir)\Build\BepInEx\plugins\&quot;" />
     <Exec Command="xcopy /y /f &quot;$(TargetPath)&quot; &quot;..\..\BepInEx\plugins\&quot;" />
     <Exec Command="xcopy /y /f &quot;$(TargetPath)&quot; &quot;G:\games\~spt 3.10\BepInEx\plugins\&quot;" />
-    <Exec Command="(powershell Compress-Archive -Path '$(ProjectDir)\Build\BepInEx' -DestinationPath '$(ProjectDir)\Build\Solarint-HeadshotDamageRedirect.zip' -Force)"/>
+    <Exec Command="(powershell Compress-Archive -Path '$(ProjectDir)\Build\BepInEx' -DestinationPath '$(ProjectDir)\Build\somtam.HeadShotDamageRedirect.zip' -Force)"/>
   </Target>
 </Project>
