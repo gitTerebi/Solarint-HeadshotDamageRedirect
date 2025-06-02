@@ -1,15 +1,14 @@
 using BepInEx.Configuration;
 using System.Collections.Generic;
 
-namespace SolarintHeadshotDamageRedirect
+namespace HeadshotDamageRedirect
 {
     internal class Settings
     {
         public static ConfigEntry<bool> ModEnabled;
+        public static ConfigEntry<bool> ChestEnabled;
         public static ConfigEntry<bool> DisplayMessage;
         public static ConfigEntry<bool> DebugEnabled;
-
-        // public static ConfigEntry<bool> OneHitKillProtection;
         public static ConfigEntry<float> RedirectPercentage;
         public static ConfigEntry<float> MaxHeadDamageNumber;
         public static ConfigEntry<float> MinHeadDamageToRedirect;
@@ -28,8 +27,8 @@ namespace SolarintHeadshotDamageRedirect
 
             int optionCount = 0;
 
-            string name = "Enable Damage Redirection";
-            string description = "Turns this mod On or Off";
+            string name = "Enable Headshot Damage Redirection";
+            string description = "Turns headshot damage redirection On or Off";
             bool defaultBool = true;
 
             ModEnabled = Config.Bind(
@@ -37,6 +36,17 @@ namespace SolarintHeadshotDamageRedirect
                 new ConfigDescription(description, null,
                 new ConfigurationManagerAttributes { Order = optionCount-- }
                 ));
+
+            name = "Enable Chest Damage Redirection";
+            description = "Turns Chest damage redirection On or Off";
+            defaultBool = true;
+
+            ChestEnabled = Config.Bind(
+                GeneralSectionTitle, name, defaultBool,
+                new ConfigDescription(description, null,
+                new ConfigurationManagerAttributes { Order = optionCount-- }
+                ));
+
 
             name = "Display Notification on Damage Received";
             description = "Display an in game notification when damage to your head is detected and modified.";
@@ -49,7 +59,7 @@ namespace SolarintHeadshotDamageRedirect
                 ));
 
             name = "Damage Redirection Percentage";
-            description = "The amount of damage in percentage, to redirect to another body part when the player is headshot. " +
+            description = "The amount of damage in percentage, to redirect to another body part when the player receives damage. " +
                     "So if this is set to 60, and you receive 50 damage to your head, you will instead receive 20 damage to their head, " +
                     "and 40 will be redirected to a random body part selected. ";
             float defaultFloat = 60f;
@@ -86,10 +96,10 @@ namespace SolarintHeadshotDamageRedirect
                 new ConfigurationManagerAttributes { Order = optionCount-- }
                 ));
 
-            name = "Headshot Damage Multiplier";
+            name = "Redirected Damage Multiplier";
             description =
                 "1 means this is disabled. " +
-                "If above 1, damage to the head will be multiplied before being sent to another body part, making it more punishing.";
+                "If above 1, damage to the head/chest will be multiplied before being sent to another body part, making it more punishing.";
             defaultFloat = 1f;
 
             HeadshotMultiplier = Config.Bind(
@@ -99,12 +109,10 @@ namespace SolarintHeadshotDamageRedirect
                 new ConfigurationManagerAttributes { Order = optionCount-- }
                 ));
 
-            name = "Minimum Head Damage To Redirect";
+            name = "Clamp Max Damage";
             description =
                 "0 means this is disabled. " +
-                "If set above 0, this will be the minimum damage to your head for damage redirection to occur " +
-                "So for example, if the player receives 20 damage to the head, and this is set to 30, no damage will be redirected at all, and the mod will do nothing. " +
-                "This happens BEFORE redirection!";
+                "Max damage that can be applied to head/chest after redirection.";
             defaultFloat = 0f;
 
             MaxHeadDamageNumber = Config.Bind(
@@ -114,13 +122,13 @@ namespace SolarintHeadshotDamageRedirect
                 new ConfigurationManagerAttributes { Order = optionCount-- }
                 ));
 
-            name = "Minimum Head Damage To Redirect";
+            name = "Minimum Damage To Redirect";
             description =
                 "0 means this is disabled. " +
                 "If set above 0, this will be the minimum damage to your head for damage redirection to occur " +
                 "So for example, if the player receives 20 damage to the head, and this is set to 30, no damage will be redirected at all, and the mod will do nothing. " +
                 "This happens BEFORE redirection!";
-            defaultFloat = 0f;
+            defaultFloat = 17f;
 
             MinHeadDamageToRedirect = Config.Bind(
                 OptionalSectionTitle, name, defaultFloat,
@@ -130,7 +138,7 @@ namespace SolarintHeadshotDamageRedirect
                 ));
 
             // Body Part Selection
-            List<EBodyPart> baseParts = ApplyDamageInfoPatch.BaseBodyParts;
+            List<EBodyPart> baseParts = ApplyDamageInfoPatch.AllBodyParts;
 
             name = "Parts to Redirect To";
             description =
