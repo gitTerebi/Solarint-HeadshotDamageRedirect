@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading;
 using UnityEngine;
 
-namespace SolarintHeadshotDamageRedirect
+namespace HeadshotDamageRedirect
 {
     [BepInPlugin("com.somtam.dmgRedirect", "Headshot Damage Redirection", "1.5.1")]
     public class Plugin : BaseUnityPlugin
@@ -34,7 +34,7 @@ namespace SolarintHeadshotDamageRedirect
         [PatchPrefix]
         public static void PatchPrefix(ref EBodyPart bodyPartType, ref DamageInfoStruct damageInfo, ref Player __instance)
         {
-            if (Settings.ModEnabled.Value == false) return;
+            if (Settings.ModEnabled.Value == false && Settings.ChestEnabled.Value == false) return;
 
             // Target is not our player - don't do anything
             if (__instance == null || !__instance.IsYourPlayer || __instance.IsAI) return;
@@ -44,32 +44,32 @@ namespace SolarintHeadshotDamageRedirect
                 damageInfo.Damage = damageInfo.Damage * Settings.GlobalDamageReductionPercentage.Value / 100;
 
             // Is the incoming damage coming to the head, and is the current player instance the main player?
-            if (bodyPartType == EBodyPart.Head)
+            if ((bodyPartType == EBodyPart.Head && Settings.ModEnabled.Value == true) || (bodyPartType == EBodyPart.Chest && Settings.ChestEnabled.Value == true))
             {
 
-                if (Settings.DebugEnabled.Value) Plugin.LogSource.LogInfo("Redirecting head damage...");
+                if (Settings.DebugEnabled.Value) Plugin.LogSource.LogInfo($"Redirecting {bodyPartType} damage...");
 
                 float chance = Settings.ChanceToRedirect.Value;
                 if (chance < 100 && !RandomBool(chance))
                 {
                     if (Settings.DisplayMessage.Value || Settings.DebugEnabled.Value)
-                        Plugin.LogSource.LogInfo("Chance to redirect head damage failed roll.");
+                        Plugin.LogSource.LogInfo($"Chance to redirect {bodyPartType} damage failed roll.");
                     return;
                 }
 
-                float originalDamageTohead = damageInfo.Damage;
+                float originalPartDamage = damageInfo.Damage;
 
                 // Did the user set a minimum damage threshold for the mod to activate? if so, check to see if the incoming damage meets that threshold.
                 float minDmg = Settings.MinHeadDamageToRedirect.Value;
-                if (minDmg > 0 && minDmg > originalDamageTohead)
+                if (minDmg > 0 && minDmg > originalPartDamage)
                 {
                     if (Settings.DisplayMessage.Value || Settings.DebugEnabled.Value)
-                        Plugin.LogSource.LogInfo("Redirect head damage less than min head damage threshold.");
+                        Plugin.LogSource.LogInfo($"Redirect {bodyPartType} damage less than min damage threshold.");
                     return;
                 }
 
                 // Reduce the incoming head damage by a ratio the user has set
-                float newDamageToHead = CalcDamageToHead(originalDamageTohead, out float damageToRedirect);
+                float newPartDamage = CalcDamageToOriginalPart(originalPartDamage, out float damageToRedirect);
 
                 // Log health of each part 
                 if (Settings.DebugEnabled.Value)
@@ -87,20 +87,22 @@ namespace SolarintHeadshotDamageRedirect
                 float maxDmg = Settings.MaxHeadDamageNumber.Value;
                 if (maxDmg > 0)
                 {
-                    newDamageToHead = Mathf.Clamp(newDamageToHead, 0, maxDmg);
+                    newPartDamage = Mathf.Clamp(newPartDamage, 0, maxDmg);
                 }
 
-                LogMessage(originalDamageTohead, newDamageToHead, damageToRedirect, _sb);
+                LogMessage(bodyPartType.ToString(), originalPartDamage, newPartDamage, damageToRedirect, _sb);
 
                 // Update the damage to our reduced number.
-                damageInfo.Damage = newDamageToHead;
+                damageInfo.Damage = newPartDamage;
 
                 // Log health of each part 
                 if (Settings.DebugEnabled.Value)
                     foreach (EBodyPart bodyPart in Enum.GetValues(typeof(EBodyPart)))
                     {
                         if (bodyPart == EBodyPart.Head)
-                            Plugin.LogSource.LogInfo($"After {bodyPart}  = {__instance.ActiveHealthController.GetBodyPartHealth(bodyPart).Current - newDamageToHead} hp");
+                            Plugin.LogSource.LogInfo($"After {bodyPart}  = {__instance.ActiveHealthController.GetBodyPartHealth(bodyPart).Current - newPartDamage} hp");
+                        else if (bodyPart == EBodyPart.Chest && Settings.ChestEnabled.Value == true)
+                            Plugin.LogSource.LogInfo($"After {bodyPart}  = {__instance.ActiveHealthController.GetBodyPartHealth(bodyPart).Current - newPartDamage} hp");
                         else
                             Plugin.LogSource.LogInfo($"After {bodyPart}  = {__instance.ActiveHealthController.GetBodyPartHealth(bodyPart).Current} hp");
                     }
@@ -137,10 +139,10 @@ namespace SolarintHeadshotDamageRedirect
                 return;
             }
 
-            int max = BaseBodyParts.Count;
+            int max = AllBodyParts.Count;
             if (target >= max)
             {
-                parts.AddRange(BaseBodyParts);
+                parts.AddRange(AllBodyParts);
                 return;
             }
 
@@ -161,11 +163,11 @@ namespace SolarintHeadshotDamageRedirect
 
         private static readonly List<EBodyPart> _partsToRedirect = new List<EBodyPart>();
 
-        private static void LogMessage(float originalDamageTohead, float newDamageToHead, float damageToRedirect, StringBuilder stringBuilder)
+        private static void LogMessage(string bodyPart, float originalPartDamage, float newPartDamage, float damageToRedirect, StringBuilder stringBuilder)
         {
-            string message = $"Redirected head damage ({originalDamageTohead.ToString("0.#")}) = " +
-                $"Head ({newDamageToHead.ToString("0.#")}) " +
-                $"{stringBuilder} ({damageToRedirect.ToString("0.#")})";
+            string message = $"Redirected {bodyPart} damage ({originalPartDamage.ToString("0.#")}) = " +
+                $"[{bodyPart}] ({newPartDamage.ToString("0.#")}) " +
+                $"[{stringBuilder}] ({damageToRedirect.ToString("0.#")})";
 
             if (Settings.DisplayMessage.Value || Settings.DebugEnabled.Value)
             {
@@ -214,7 +216,7 @@ namespace SolarintHeadshotDamageRedirect
             };
         }
 
-        private static float CalcDamageToHead(float damageToHead, out float damageToRedirect)
+        private static float CalcDamageToOriginalPart(float damageToHead, out float damageToRedirect)
         {
 
             // calc amount to redirect
@@ -228,21 +230,22 @@ namespace SolarintHeadshotDamageRedirect
 
         private static EBodyPart SelectRandomBodyPart()
         {
-            BaseBodyParts.Shuffle();
+            AllBodyParts.Shuffle();
 
-            for (int i = 0; i < BaseBodyParts.Count; i++)
+            for (int i = 0; i < AllBodyParts.Count; i++)
             {
-                EBodyPart bodyPart = BaseBodyParts[i];
+                EBodyPart bodyPart = AllBodyParts[i];
                 if (Settings.RedirectParts[bodyPart].Value == true)
                 {
                     return bodyPart;
                 }
             }
 
-            return EBodyPart.Chest;
+            // Nothing selected so use stomach
+            return EBodyPart.Stomach;
         }
 
-        public static readonly List<EBodyPart> BaseBodyParts = new List<EBodyPart>
+        public static readonly List<EBodyPart> AllBodyParts = new List<EBodyPart>
         {
             EBodyPart.Chest,
             EBodyPart.Stomach,
@@ -251,6 +254,7 @@ namespace SolarintHeadshotDamageRedirect
             EBodyPart.LeftLeg,
             EBodyPart.RightLeg
         };
+
     }
 
     // Code used from https://stackoverflow.com/questions/273313/randomize-a-listt
